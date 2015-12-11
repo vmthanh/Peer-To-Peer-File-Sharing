@@ -72,6 +72,11 @@ public class FileShareNode extends Node {
 			files.remove(filename);
 		files.put(filename, getId());
 	}
+	
+	public void deleteLocalFile(String filename){
+		if (files.containsKey(filename))
+			files.remove(filename);
+	}
 
 	public String[] getFileNames() {
 		return files.keySet().toArray(new String[files.size()]);
