@@ -1,5 +1,7 @@
 package com.sample;
 
+import com.util.JLayerPlayerPausable;
+
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -25,6 +27,7 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.border.EmptyBorder;
 
+import javazoom.jl.decoder.JavaLayerException;
 import com.LoggerUtil;
 import com.PeerInfo;
 import com.PeerMessage;
@@ -48,11 +51,15 @@ public class FileShareApp extends JFrame {
 	private JTextField rebuildTextField;
 
 	private FileShareNode peer;
+	private SoundJLayer soundToPlay;
 	
 	private ObjectInputStream inputStream = null;
 	private FileEvent fileEvent;
 	private File dstFile = null;
 	private FileOutputStream fileOutputStream = null;
+	private final JButton btnPlay = new JButton("Play");
+	private final JButton btnPause = new JButton("Pause");
+	private final JButton btnStop = new JButton("Stop");
 
 
 	private FileShareApp(String initialhost, int initialport, int maxpeers, PeerInfo mypd)
@@ -109,7 +116,7 @@ public class FileShareApp extends JFrame {
 		frame = new JFrame("FileShareNode ID: <" + peer.getId() + ">");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		frame.setLayout(new BorderLayout());
+		frame.getContentPane().setLayout(new BorderLayout());
 
 
 		JPanel upperPanel = new JPanel();
@@ -120,7 +127,7 @@ public class FileShareApp extends JFrame {
 		lowerPanel.setLayout(new GridLayout(1, 2));
 
 
-		frame.setSize(FRAME_WIDTH, FRAME_HEIGHT);
+		frame.setSize(600, 291);
 
 		filesModel = new DefaultListModel();
 		filesList = new JList(filesModel);
@@ -147,13 +154,34 @@ public class FileShareApp extends JFrame {
 		upperPanel.add(peersPanel);
 		lowerPanel.add(lowerFilesPanel);
 		lowerPanel.add(lowerPeersPanel);
+		btnPlay.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				String selected = filesList.getSelectedValue().toString();
+				String filename = selected.substring(0, selected.indexOf(':'));
+				soundToPlay = new SoundJLayer(filename);
+				soundToPlay.play();
+			}
+		});
+		lowerPeersPanel.add(btnPlay);
+		btnPause.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				soundToPlay.pauseToggle();
+			}
+		});
+		lowerPeersPanel.add(btnPause);
+		btnStop.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				soundToPlay.stop();
+			}
+		});
+		lowerPeersPanel.add(btnStop);
 
 		/* by using a CENTER BorderLayout, the 
 		   overlapping problem is fixed:
 		   http://forum.java.sun.com/thread.jspa?threadID=551544&messageID=2698227 */
 
-		frame.add(upperPanel, BorderLayout.NORTH);
-		frame.add(lowerPanel, BorderLayout.CENTER);
+		frame.getContentPane().add(upperPanel, BorderLayout.NORTH);
+		frame.getContentPane().add(lowerPanel, BorderLayout.CENTER);
 
 		frame.setVisible(true);
 
@@ -320,4 +348,106 @@ public class FileShareApp extends JFrame {
 		 5, new PeerData("localhost", 8001)); */
 	}
 
+}
+
+class SoundJLayer implements Runnable{
+	private String filePath;
+    private JLayerPlayerPausable player;
+    private Thread playerThread;
+    private String namePlayerThread = "AudioPlayerThread";
+    private PlaybackListener playbackListener = new PlaybackListener();
+
+    public SoundJLayer(String filePath){
+            this.filePath = filePath;
+    }
+   
+    public SoundJLayer(String filePath, String namePlayerThread){
+            this.filePath = filePath;
+            this.namePlayerThread = namePlayerThread;
+    }
+
+    public void play(){
+            if (this.player == null){
+                    this.playerInitialize();
+            }
+            else if(!this.player.isPaused() || this.player.isComplete() || this.player.isStopped()){
+                    this.stop();
+                    this.playerInitialize();
+            }
+            this.playerThread = new Thread(this, namePlayerThread);
+            this.playerThread.setDaemon(true);
+
+            this.playerThread.start();
+    }
+
+    public void pause(){
+            if (this.player != null){
+                    this.player.pause();
+
+                    if(this.playerThread != null){
+                            //this.playerThread.stop(); //unsafe method
+                            this.playerThread = null;
+                    }
+            }
+    }
+
+    public void pauseToggle(){
+            if (this.player != null){
+                    if (this.player.isPaused() && !this.player.isStopped()){
+                            this.play();
+                    }
+                    else{
+                            this.pause();
+                    }
+            }
+    }
+
+    public void stop(){
+            if (this.player != null){
+                    this.player.stop();
+
+                    if(this.playerThread != null){
+                            //this.playerThread.stop(); //unsafe method
+                            this.playerThread = null;
+                    }
+            }
+    }
+
+    private void playerInitialize(){
+            try {
+                    this.player = new JLayerPlayerPausable(this.filePath);
+                    this.player.setPlaybackListener(this.playbackListener);
+            }
+            catch (JavaLayerException e) {
+                    e.printStackTrace();
+            }
+    }
+
+    // IRunnable members
+    public void run(){
+            try{
+                    this.player.resume();
+            }
+            catch (javazoom.jl.decoder.JavaLayerException ex){
+                    ex.printStackTrace();
+            }
+    }
+   
+    private static class PlaybackListener extends JLayerPlayerPausable.PlaybackAdapter {
+            // PlaybackListener members
+            @Override
+            public void playbackStarted(JLayerPlayerPausable.PlaybackEvent playbackEvent){
+                    System.err.println("PlaybackStarted()");
+            }
+           
+            @Override
+            public void playbackPaused(JLayerPlayerPausable.PlaybackEvent playbackEvent){
+                    System.err.println("PlaybackPaused()");
+            }
+
+            @Override
+            public void playbackFinished(JLayerPlayerPausable.PlaybackEvent playbackEvent){
+                    System.err.println("PlaybackStopped()");
+            }
+    }
 }
