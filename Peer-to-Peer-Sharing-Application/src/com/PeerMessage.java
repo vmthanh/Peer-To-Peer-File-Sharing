@@ -2,6 +2,7 @@ package com;
 
 import java.io.IOException;
 
+import com.socket.FileEvent;
 import com.socket.SocketInterface;
 
 /**
@@ -17,7 +18,7 @@ public class PeerMessage {
 	
 	private byte[] type;
 	private byte[] data;
-	
+	private FileEvent fileEvent;
 	/**
 	 * Constructs a new PeerMessage object.
 	 * @param type the message type (4 bytes)
@@ -48,6 +49,11 @@ public class PeerMessage {
 		this(type.getBytes(), data);
 	}
 	
+	public PeerMessage(String type, FileEvent fileEvent){
+		this.type = type.getBytes();
+		this.fileEvent = fileEvent;
+	}
+	
 	
 	/**
 	 * Constructs a new PeerMessage object by reading data
@@ -69,6 +75,16 @@ public class PeerMessage {
 		if (s.read(data) != len)
 			throw new IOException("EOF in PeerMessage constructor: " +
 									"Unexpected message data length");
+	}
+	
+	public PeerMessage(SocketInterface s, String type) throws IOException{
+		if (type == "data")
+		{
+			FileEvent temp = s.readData();
+			this.fileEvent = temp;
+			this.type = "REPL".getBytes();
+			this.data = null;
+		}
 	}
 	
 	/** 
@@ -103,6 +119,10 @@ public class PeerMessage {
 	 */
 	public byte[] getMsgDataBytes() {
 		return (byte[])data.clone();
+	}
+	
+	public FileEvent getFileEvent(){
+		return this.fileEvent;
 	}
 	
 	/**

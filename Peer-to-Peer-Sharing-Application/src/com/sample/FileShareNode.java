@@ -1,7 +1,11 @@
 package com.sample;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.Hashtable;
 
@@ -12,6 +16,7 @@ import com.PeerConnection;
 import com.PeerInfo;
 import com.PeerMessage;
 import com.RouterInterface;
+import com.socket.FileEvent;
 
 /**
  * The backend implementation of a simple peer-to-peer file sharing application.
@@ -124,14 +129,14 @@ public class FileShareNode extends Node {
 		public void handleMessage(PeerConnection peerconn, PeerMessage msg) {
 			if (peer.maxPeersReached()) {
 				LoggerUtil.getLogger().fine("maxpeers reached " + peer.getMaxPeers());
-				peerconn.sendData(new PeerMessage(ERROR, "Join: " + "too many peers"));
+				peerconn.sendData(new PeerMessage(ERROR, "Join: " + "too many peers"),"none");
 				return;
 			}
 
 			// check for correct number of arguments
 			String[] data = msg.getMsgData().split("\\s");
 			if (data.length != 3) {
-				peerconn.sendData(new PeerMessage(ERROR, "Join: " + "incorrect arguments"));
+				peerconn.sendData(new PeerMessage(ERROR, "Join: " + "incorrect arguments"),"none");
 				return;
 			}
 
@@ -139,12 +144,12 @@ public class FileShareNode extends Node {
 			PeerInfo info = new PeerInfo(data[0], data[1], Integer.parseInt(data[2]));
 
 			if (peer.getPeer(info.getId()) != null)
-				peerconn.sendData(new PeerMessage(ERROR, "Join: " + "peer already inserted"));
+				peerconn.sendData(new PeerMessage(ERROR, "Join: " + "peer already inserted"),"none");
 			else if (info.getId().equals(peer.getId()))
-				peerconn.sendData(new PeerMessage(ERROR, "Join: " + "attempt to insert self"));
+				peerconn.sendData(new PeerMessage(ERROR, "Join: " + "attempt to insert self"),"none");
 			else {
 				peer.addPeer(info);
-				peerconn.sendData(new PeerMessage(REPLY, "Join: " + "peer added: " + info.getId()));
+				peerconn.sendData(new PeerMessage(REPLY, "Join: " + "peer added: " + info.getId()),"none");
 			}
 		}
 	}
@@ -158,9 +163,9 @@ public class FileShareNode extends Node {
 		}
 
 		public void handleMessage(PeerConnection peerconn, PeerMessage msg) {
-			peerconn.sendData(new PeerMessage(REPLY, String.format("%d", peer.getNumberOfPeers())));
+			peerconn.sendData(new PeerMessage(REPLY, String.format("%d", peer.getNumberOfPeers())),"none");
 			for (String pid : peer.getPeerKeys()) {
-				peerconn.sendData(new PeerMessage(REPLY, String.format("%s %s %d", pid, peer.getPeer(pid).getHost(), peer.getPeer(pid).getPort())));
+				peerconn.sendData(new PeerMessage(REPLY, String.format("%s %s %d", pid, peer.getPeer(pid).getHost(), peer.getPeer(pid).getPort())),"none");
 			}
 		}
 	}
@@ -174,7 +179,7 @@ public class FileShareNode extends Node {
 		}
 
 		public void handleMessage(PeerConnection peerconn, PeerMessage msg) {
-			peerconn.sendData(new PeerMessage(REPLY, peer.getId()));
+			peerconn.sendData(new PeerMessage(REPLY, peer.getId()),"none");
 		}
 	}
 
@@ -189,14 +194,14 @@ public class FileShareNode extends Node {
 		public void handleMessage(PeerConnection peerconn, PeerMessage msg) {
 			String[] data = msg.getMsgData().split("\\s");
 			if (data.length != 3) {
-				peerconn.sendData(new PeerMessage(ERROR, "Query: incorrect arguments"));
+				peerconn.sendData(new PeerMessage(ERROR, "Query: incorrect arguments"),"none");
 				return;
 			}
 
 			String ret_pid = data[0].trim();
 			String key = data[1].trim();
 			int ttl = Integer.parseInt(data[2].trim());
-			peerconn.sendData(new PeerMessage(REPLY, "Query: ACK"));
+			peerconn.sendData(new PeerMessage(REPLY, "Query: ACK"),"none");
 			/*
 			 * After acknowledging the query, this connection will be closed. A
 			 * separate thread will be started to actually perform the task of
@@ -259,19 +264,19 @@ public class FileShareNode extends Node {
 		public void handleMessage(PeerConnection peerconn, PeerMessage msg) {
 			String[] data = msg.getMsgData().split("\\s");
 			if (data.length != 2) {
-				peerconn.sendData(new PeerMessage(ERROR, "Resp: " + "incorrect arguments"));
+				peerconn.sendData(new PeerMessage(ERROR, "Resp: " + "incorrect arguments"),"none");
 				return;
 			}
 
 			String filename = data[0];
 			String pid = data[1];
 			if (files.containsKey(filename)) {
-				peerconn.sendData(new PeerMessage(ERROR, "Resp: " + "can't add duplicate file " + filename));
+				peerconn.sendData(new PeerMessage(ERROR, "Resp: " + "can't add duplicate file " + filename),"none");
 				return;
 			}
 
 			files.put(filename, pid);
-			peerconn.sendData(new PeerMessage(REPLY, "Resp: " + "file info added " + filename));
+			peerconn.sendData(new PeerMessage(REPLY, "Resp: " + "file info added " + filename),"none");
 		}
 	}
 
@@ -287,11 +292,11 @@ public class FileShareNode extends Node {
 		public void handleMessage(PeerConnection peerconn, PeerMessage msg) {
 			String filename = msg.getMsgData().trim();
 			if (!files.containsKey(filename)) {
-				peerconn.sendData(new PeerMessage(ERROR, "Fget: " + "file not found " + filename));
+				peerconn.sendData(new PeerMessage(ERROR, "Fget: " + "file not found " + filename),"none");
 				return;
 			}
 
-			byte[] filedata = null;
+			/*byte[] filedata = null;
 			try {
 				FileInputStream infile = new FileInputStream(filename);
 				int len = infile.available();
@@ -302,9 +307,38 @@ public class FileShareNode extends Node {
 				LoggerUtil.getLogger().info("Fget: error reading file: " + e);
 				peerconn.sendData(new PeerMessage(ERROR, "Fget: " + "error reading file " + filename));
 				return;
+			}*/
+			/*New way of sending*/
+			FileEvent fileEvent = new FileEvent();
+			fileEvent.setDestinationDirectory("");
+			fileEvent.setFileName(filename);
+			fileEvent.setSourceDirectory("");
+			String fullPathName = "C:/Users/Minh Thanh/Downloads/Music/test/"+filename;
+			File file = new File(filename);
+			if (file.isFile()){
+				try {
+					DataInputStream diStream = new DataInputStream(new FileInputStream(file));
+					long len = (int)file.length();
+					byte[] fileBytes = new byte[(int)len];
+					int read = 0;
+					int numRead = 0;
+					while(read <fileBytes.length && (numRead = diStream.read(fileBytes,read,fileBytes.length-read))>=0){
+						read = read + numRead;
+					}
+					fileEvent.setFileSize(len);
+					fileEvent.setFileData(fileBytes);
+					fileEvent.setStatus("Success");
+					peerconn.sendData(new PeerMessage(REPLY, fileEvent),"data");
+				} catch (Exception e) {
+					fileEvent.setStatus("Error");
+					LoggerUtil.getLogger().info("Fget: error reading file: " + e);
+					peerconn.sendData(new PeerMessage(ERROR, "Fget: " + "error reading file " + filename),"none");
+					return;
+					// TODO: handle exception
+				}
 			}
-
-			peerconn.sendData(new PeerMessage(REPLY, filedata));
+		
+			
 		}
 	}
 
@@ -319,10 +353,10 @@ public class FileShareNode extends Node {
 		public void handleMessage(PeerConnection peerconn, PeerMessage msg) {
 			String pid = msg.getMsgData().trim();
 			if (peer.getPeer(pid) == null) {
-				peerconn.sendData(new PeerMessage(ERROR, "Quit: peer not found: " + pid));
+				peerconn.sendData(new PeerMessage(ERROR, "Quit: peer not found: " + pid),"none");
 			} else {
 				peer.removePeer(pid);
-				peerconn.sendData(new PeerMessage(REPLY, "Quit: peer removed: " + pid));
+				peerconn.sendData(new PeerMessage(REPLY, "Quit: peer removed: " + pid),"none");
 			}
 		}
 	}

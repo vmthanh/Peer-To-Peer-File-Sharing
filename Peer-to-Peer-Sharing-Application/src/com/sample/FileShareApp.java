@@ -6,8 +6,11 @@ import java.awt.EventQueue;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -25,6 +28,7 @@ import javax.swing.border.EmptyBorder;
 import com.LoggerUtil;
 import com.PeerInfo;
 import com.PeerMessage;
+import com.socket.FileEvent;
 import com.util.SimplePingStabilizer;
 
 public class FileShareApp extends JFrame {
@@ -44,6 +48,11 @@ public class FileShareApp extends JFrame {
 	private JTextField rebuildTextField;
 
 	private FileShareNode peer;
+	
+	private ObjectInputStream inputStream = null;
+	private FileEvent fileEvent;
+	private File dstFile = null;
+	private FileOutputStream fileOutputStream = null;
 
 
 	private FileShareApp(String initialhost, int initialport, int maxpeers, PeerInfo mypd)
@@ -200,10 +209,28 @@ public class FileShareApp extends JFrame {
 				LoggerUtil.getLogger().fine("FETCH RESPONSE TYPE: " + resplist.get(0).getMsgType());
 				if (resplist.size() > 0 && resplist.get(0).getMsgType().equals(FileShareNode.REPLY)) {
 					try {
-						FileOutputStream outfile = new FileOutputStream(filename);
+						/*FileOutputStream outfile = new FileOutputStream(filename);
 						outfile.write(resplist.get(0).getMsgDataBytes());
 						outfile.close();
+						peer.addLocalFile(filename);*/
+						
+						
+						fileEvent = resplist.get(0).getFileEvent();
+						if(fileEvent.getStatus().equalsIgnoreCase("Error"))
+						{
+							throw new ClassCastException("Error occured");
+						}
+						String outputFile = fileEvent.getDestinationDirectory() + fileEvent.getFileName();
+						if (!new File(fileEvent.getDestinationDirectory()).exists()){
+							new File(fileEvent.getDestinationDirectory()).mkdirs();
+						}
+						dstFile = new File(outputFile);
+						fileOutputStream = new FileOutputStream(dstFile);
+						fileOutputStream.write(fileEvent.getFileData());
+						fileOutputStream.flush();
+						fileOutputStream.close();
 						peer.addLocalFile(filename);
+						
 					} catch (IOException ex) {
 						LoggerUtil.getLogger().warning("Fetch error: " + ex);
 					}

@@ -50,9 +50,15 @@ public class PeerConnection {
 	 * @param msg
 	 *            the message object to send
 	 */
-	public void sendData(PeerMessage msg) {
+	public void sendData(PeerMessage msg, String type) {
 		try {
-			s.write(msg.toBytes());
+			if (type == "data")
+			{
+				s.writeData(msg.getFileEvent());
+			}else{
+				s.write(msg.toBytes());
+			}
+			
 		} catch (IOException e) {
 			LoggerUtil.getLogger().warning("Error sending message: " + e);
 		}
@@ -74,6 +80,16 @@ public class PeerConnection {
 				LoggerUtil.getLogger().warning("Error receiving message: " + e);
 			else
 				LoggerUtil.getLogger().finest("Error receiving message: " + e);
+			return null;
+		}
+	}
+	
+	public PeerMessage recvDataGet(){
+		try {
+			PeerMessage msg = new PeerMessage(s,"data");
+			return msg;
+		} catch (Exception e) {
+			// TODO: handle exception
 			return null;
 		}
 	}

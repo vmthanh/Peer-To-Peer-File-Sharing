@@ -1,7 +1,10 @@
 package com.socket;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -17,6 +20,8 @@ public class NormalSocket implements SocketInterface{
 	private Socket s;
 	private InputStream is;
 	private OutputStream os;
+	private ObjectInputStream objectInputStream;
+	private ObjectOutputStream objectOutputStream;
 
 	/**
 	 * Creates a stream socket and connects it to the specified port number on the named host.
@@ -41,6 +46,9 @@ public class NormalSocket implements SocketInterface{
 		s = socket;
 		is = s.getInputStream();
 		os = s.getOutputStream();
+		objectOutputStream = new ObjectOutputStream(s.getOutputStream());
+		objectInputStream = new ObjectInputStream(s.getInputStream());
+		
 	}
 	public void close() throws IOException{
 		is.close();
@@ -51,8 +59,20 @@ public class NormalSocket implements SocketInterface{
 	@Override
 	public void write(byte[] b) throws IOException {
 		// TODO Auto-generated method stub
-		os.write(b);
-		os.flush();
+		try {
+			//ObjectOutputStream outputStream = new ObjectOutputStream(s.getOutputStream());
+			//outputStream.writeObject(b);
+			os.write(b);
+			os.flush();
+		} catch (Exception e) {
+		
+		}
+		
+		
+	}
+	@Override
+	public void writeData(FileEvent fileEvent) throws IOException{
+			objectOutputStream.writeObject(fileEvent);
 	}
 
 	@Override
@@ -65,6 +85,20 @@ public class NormalSocket implements SocketInterface{
 	public int read(byte[] b) throws IOException {
 		// TODO Auto-generated method stub
 		return is.read(b);
+		
+	}
+	
+	@Override
+	public FileEvent readData() throws IOException{
+		FileEvent fileEvent;
+		try {
+			fileEvent = (FileEvent) objectInputStream.readObject();
+			return fileEvent;
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
 		
 	}
 	

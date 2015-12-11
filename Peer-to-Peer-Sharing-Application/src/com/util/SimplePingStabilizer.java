@@ -29,7 +29,7 @@ public class SimplePingStabilizer implements StabilizerInterface{
 			PeerConnection peerconn = null;
 			try {
 				peerconn = new PeerConnection(peer.getPeer(pid));
-				peerconn.sendData(new PeerMessage(msgtype, ""));
+				peerconn.sendData(new PeerMessage(msgtype, ""),"none");
 				isconn = true;
 			}
 			catch (IOException e) {

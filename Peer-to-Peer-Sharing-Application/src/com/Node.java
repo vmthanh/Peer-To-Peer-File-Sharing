@@ -231,16 +231,25 @@ public class Node {
 		try {
 			PeerConnection peerconn = new PeerConnection(pd);
 			PeerMessage tosend = new PeerMessage(msgtype, msgdata);
-			peerconn.sendData(tosend);
+			peerconn.sendData(tosend,"none");
 			LoggerUtil.getLogger().fine("Sent " + tosend + "/" + peerconn);
 
 			if (waitreply) {
-				PeerMessage onereply = peerconn.recvData();
-				while (onereply != null) {
-					msgreply.add(onereply);
-					LoggerUtil.getLogger().fine("Got reply " + onereply);
-					onereply = peerconn.recvData();
+				if (msgtype !="FGET"){
+					PeerMessage onereply = peerconn.recvData();
+					while (onereply != null) {
+						msgreply.add(onereply);
+						LoggerUtil.getLogger().fine("Got reply " + onereply);
+						onereply = peerconn.recvData();
+					}
+				}else{
+					PeerMessage onereply = peerconn.recvDataGet();
+					if (onereply!=null)
+					{
+						msgreply.add(onereply);
+					}
 				}
+				
 			}
 
 			peerconn.close();

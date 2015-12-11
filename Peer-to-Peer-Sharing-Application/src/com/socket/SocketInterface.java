@@ -20,6 +20,8 @@ public interface SocketInterface {
 	 **/
 	public void write(byte[] b) throws IOException;
 	
+	public void writeData(FileEvent fileEvent) throws IOException;
+	
 	
 	/**
 	 * Reads the next byte of data from the socket connection. The value 
@@ -49,6 +51,8 @@ public interface SocketInterface {
 	 * @throws IOException if an I/O error occurs
 	 */
 	public int read(byte[] b) throws IOException;
+	
+	public FileEvent readData() throws IOException;
 	
 	
 	/**
