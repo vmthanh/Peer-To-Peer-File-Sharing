@@ -10,7 +10,6 @@ import com.RouterInterface;
  * If the destination node is not an immediate neighbor, this function
  * fails.
  * 
- * @author Nadeem Abdul Hamid
  */
 
 public class SimpleRouter implements RouterInterface{

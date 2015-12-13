@@ -88,7 +88,6 @@ public class FileShareNode extends Node {
 
 	public void buildPeers(String host, int port, int hops) {
 		LoggerUtil.getLogger().fine("build peers");
-
 		if (this.maxPeersReached() || hops <= 0)
 			return;
 		PeerInfo pd = new PeerInfo(host, port);
@@ -300,19 +299,6 @@ public class FileShareNode extends Node {
 				peerconn.sendData(new PeerMessage(ERROR, "Fget: " + "file not found " + filename),"none");
 				return;
 			}
-
-			/*byte[] filedata = null;
-			try {
-				FileInputStream infile = new FileInputStream(filename);
-				int len = infile.available();
-				filedata = new byte[len];
-				infile.read(filedata);
-				infile.close();
-			} catch (IOException e) {
-				LoggerUtil.getLogger().info("Fget: error reading file: " + e);
-				peerconn.sendData(new PeerMessage(ERROR, "Fget: " + "error reading file " + filename));
-				return;
-			}*/
 			/*New way of sending*/
 			FileEvent fileEvent = new FileEvent();
 			fileEvent.setDestinationDirectory("");
